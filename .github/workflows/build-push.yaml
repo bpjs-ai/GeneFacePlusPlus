@@ -15,6 +15,7 @@ concurrency:
 
 jobs:
   build_push:
+    if: "!contains(github.event.head_commit.message, '[no-build]')"
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -22,6 +23,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo rm -rf /tmp/*
+          sudo rm -rf /opt/hostedtoolcache
+          sudo apt-get clean
+          docker system prune -af
+          echo "Disk space after cleanup:"
+          df -h
 
       - name: Docker metadata
         id: metadata

@@ -1,0 +1,42 @@
+name: Docker Base Build and Push
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build_base:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Docker metadata
+        id: metadata
+        uses: docker/metadata-action@v3
+        with:
+          images: ghcr.io/bpjs-ai/ubuntu22.04-cu118-conda
+          tags: torch2.0.1-py39
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push cu118-conda image
+        if: steps.check_cu118.outputs.exists == 'false'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.cu118.torch2.0.1.py39
+          push: true
+          platforms: linux/amd64
+          tags: ghcr.io/bpjs-ai/ubuntu22.04-cu118-conda:torch2.0.1-py39
